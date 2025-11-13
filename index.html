@@ -16,8 +16,198 @@
 	<body>
 		<div class="reveal">
 			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
+				<section>
+					<h2>Symfony sécurité</h2>
+				</section>
+				<section>
+					<pre>
+						<code>composer require symfony/security-bundle</code>
+					</pre>
+				</section>
+				<section>
+					<h2>Création d'une entité User</h2>
+					<pre>
+						<code>
+						php bin/console make:user
+						# Ou
+						symfony console make:user
+						</code>
+					</pre>
+				</section>
+				<section>
+					<h2>Les rôles utilisateurs</h2>
+					<pre>
+						<code>
+						# src/Entity/User.php
+						private array $roles = [];
+						...
+						public function getRoles(): array
+						{
+							$roles = $this->roles;
+							// guarantee every user at least has ROLE_USER
+							$roles[] = 'ROLE_USER';
+
+							return array_unique($roles);
+						}
+						</code></pre>
+				</section>
+				<section>
+					<h2>Access Control</h2>
+					<pre>
+						<code>
+						# config/packages/security.yaml
+						access_control:
+						# - { path: ^/admin, roles: ROLE_ADMIN }
+						# - { path: ^/profile, roles: ROLE_USER }
+						</code>
+					</pre>
+				</section>
+				<section>
+					<h2>Formulaire d'inscription et de connection</h2>
+					<pre>
+						<code>
+						php bin/console make:registration-form                                                         
+						php bin/console make:security:form-login
+						# Ou
+						symfony console make:registration-form
+						symfony console make:security:form-login
+						</code>
+					</pre>
+				</section>
+				<section>
+					<pre>
+						<code>
+						$user->setPassword($userPasswordHasher->hashPassword($user, $plainPassword));
+						</code>
+					</pre>
+				</section>
+				<section>
+					<h2>Validation des données</h2>
+					<pre>
+						<code>
+						use Symfony\Component\Validator\Constraints\<...>;
+						...
+						new <...>([
+							'option' => valeur,
+						]),
+
+						# Exemples:
+						use Symfony\Component\Validator\Constraints\NotBlank;
+						...
+						new NotBlank([
+							'message' => 'Ce champ ne peut pas être vide',
+						]),
+						</code>
+					</pre>
+				</section>
+				<section>
+					<h2>Utilisation dans un formulaire</h2>
+					<pre>
+						<code>
+						# src/Form/RegistrationFormType.php
+						->add('plainPassword', PasswordType::class, [
+							'mapped' => false,
+							'attr' => ['autocomplete' => 'new-password'],
+							'constraints' => [
+								new NotBlank([
+									'message' => 'Please enter a password',
+								]),
+								new Length([
+									'min' => 6,
+									'minMessage' => 'Your password should be at least {{ limit }} characters',
+									'max' => 4096,
+								]),
+							],
+						]);
+						</code>
+					</pre>
+					<a href="https://symfony.com/doc/current/reference/constraints.html">Toutes les contraintes</a>
+				</section>
+				<section>
+					<section>
+						<h2>Protection injections SQL</h2>
+					</section>
+					<section>
+						<h2>En PHP sans framework</h2>
+						<pre>
+							<code>
+							$stmt = $conn->prepare('SELECT * FROM product WHERE name = :name');
+							$stmt->bindValue('name', $_GET['name']);
+							$stmt->execute();
+							</code>
+						</pre>
+					</section>
+					<section>
+						<h2>Avec Doctrine</h2>
+						<p>Doctrine utilise des requêtes préparées par défaut, ce qui aide à prévenir les injections SQL.</p>
+						<pre>
+							<code>
+							$entityManager->persist($product); # persist, prépare la requête
+							$entityManager->flush(); # flush, exécute la requête
+							</code>
+						</pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Protection contre les attaques XSS</h2>
+					</section>
+					<section>
+						<h2>En PHP sans framework</h2>
+						<pre>
+							<code>
+						echo htmlspecialchars($user_input_variable);
+							</code>
+						</pre>
+					</section>
+					<section>
+						<h2>Avec Twig</h2>
+						<p>Par défaut, Twig échappe automatiquement les variables pour prévenir les attaques XSS.</p>
+						<pre>
+							<code>
+							{{ user_input_variable }} # échappé par défaut
+							</code>
+						</pre>
+					</section>
+				</section>
+				<section>
+					<section>
+						<h2>Protection contre les attaques CSRF</h2>
+					</section>
+					<section>
+						<h2>En PHP sans framework</h2>
+						<pre>
+							<code>
+							// Génération d'un token CSRF
+							session_start();
+							if (empty($_SESSION['csrf_token'])) {
+								$_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+							}
+							$token = $_SESSION['csrf_token'];
+							</code>
+						</pre>
+						<pre>
+							<code>
+							// Vérification du token CSRF lors de la soumission du formulaire
+							session_start();
+							if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+								// Token invalide, rejeter la requête
+								http_response_code(403);
+								exit('Invalid CSRF token');
+							}
+							</code>
+						</pre>
+					</section>
+					<section>
+						<h2>Avec Symfony</h2>
+						<p>Symfony intègre une protection CSRF dans les formulaires par défaut.</p>
+						<pre>
+							<code>
+							<input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="csrf-token" class="">
+							</code>
+						</pre>
+					</section>
+				</section>
 			</div>
 		</div>
 
